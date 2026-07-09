@@ -1,0 +1,20 @@
+{
+  "layer": "top",
+  "position": "top",
+  "modules-left": ["custom/opencode"],
+  "custom/opencode": {
+    "exec": "$HOME/.config/waybar/scripts/opencode-status.sh",
+    "interval": "once",
+    "signal": 5,
+    "return-type": "json",
+    "hide-empty-text": true,
+    "format": "{icon} {text}",
+    "format-icons": {
+      "working": "\u{f04b}",
+      "idle": "\u{f00c}",
+      "permission": "\u{f071}",
+      "error": "\u{f057}"
+    },
+    "tooltip-format": "{tooltip}"
+  }
+}

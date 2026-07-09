@@ -1,0 +1,27 @@
+{
+  "name": "opencode-waybar-status",
+  "version": "0.1.0",
+  "description": "OpenCode plugin that reports instance status to a Waybar widget",
+  "type": "module",
+  "packageManager": "pnpm@9.15.4",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    }
+  },
+  "scripts": {
+    "build": "tsc",
+    "dev": "tsc --watch"
+  },
+  "files": [
+    "dist"
+  ],
+  "dependencies": {
+    "@opencode-ai/plugin": "^1.0.93"
+  },
+  "devDependencies": {
+    "@types/node": "^22.0.0",
+    "typescript": "^5.7.0"
+  }
+}
