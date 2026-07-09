@@ -1,5 +1,5 @@
 {
-  "name": "opencode-waybar-status",
+  "name": "@fiffy/opencode-waybar-status",
   "version": "0.1.0",
   "description": "OpenCode plugin that reports instance status to a Waybar widget",
   "type": "module",
