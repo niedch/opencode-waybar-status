@@ -1,5 +1,5 @@
 import { writeFile, rename, mkdir, unlink } from "node:fs/promises";
-import { existsSync, unlinkSync } from "node:fs";
+import { unlinkSync } from "node:fs";
 import path from "node:path";
 
 export interface InstanceState {
@@ -15,15 +15,13 @@ export interface InstanceState {
 
 export async function writeStatus(
   dir: string,
-  instanceId: string,
+  projectSlug: string,
   state: InstanceState,
 ): Promise<void> {
-  if (!existsSync(dir)) {
-    await mkdir(dir, { recursive: true });
-  }
+  await mkdir(dir, { recursive: true });
 
-  const tmp = path.join(dir, `.${instanceId}.tmp`);
-  const dst = path.join(dir, `${instanceId}.json`);
+  const tmp = path.join(dir, `.${projectSlug}.tmp`);
+  const dst = path.join(dir, `${projectSlug}.json`);
 
   const data = JSON.stringify(state);
   await writeFile(tmp, data, "utf-8");
@@ -32,9 +30,9 @@ export async function writeStatus(
 
 export async function removeStatus(
   dir: string,
-  instanceId: string,
+  projectSlug: string,
 ): Promise<void> {
-  const dst = path.join(dir, `${instanceId}.json`);
+  const dst = path.join(dir, `${projectSlug}.json`);
   try {
     await unlink(dst);
   } catch {
@@ -42,8 +40,8 @@ export async function removeStatus(
   }
 }
 
-export function removeStatusSync(dir: string, instanceId: string): void {
-  const dst = path.join(dir, `${instanceId}.json`);
+export function removeStatusSync(dir: string, projectSlug: string): void {
+  const dst = path.join(dir, `${projectSlug}.json`);
   try {
     unlinkSync(dst);
   } catch {

@@ -2,7 +2,7 @@ import type { Plugin } from "@opencode-ai/plugin";
 import {
   getStatusDir,
   instanceIdFrom,
-  PROJECT_ID,
+  projectSlug,
   SIGNAL_NUM,
 } from "./constants.js";
 import type { InstanceState } from "./status.js";
@@ -10,12 +10,13 @@ import { writeStatus, removeStatus, removeStatusSync } from "./status.js";
 
 export const WaybarStatus: Plugin = async ({ project, serverUrl, $ }) => {
   const dir = getStatusDir();
+  const slug = projectSlug(project.worktree);
 
   const instanceId = instanceIdFrom(new URL(serverUrl));
 
   const state: InstanceState = {
     instanceId,
-    project: PROJECT_ID,
+    project: slug,
     status: "idle",
     permissionRequested: false,
     updatedAt: Date.now(),
@@ -25,7 +26,7 @@ export const WaybarStatus: Plugin = async ({ project, serverUrl, $ }) => {
 
   async function flush(signal = true) {
     state.updatedAt = Date.now();
-    await writeStatus(dir, instanceId, state);
+    await writeStatus(dir, slug, state);
     if (signal) {
       try {
         await $`pkill -RTMIN+${SIGNAL_NUM} waybar`;
@@ -44,10 +45,10 @@ export const WaybarStatus: Plugin = async ({ project, serverUrl, $ }) => {
   }
 
   // Write initial idle state immediately
-  await writeStatus(dir, instanceId, state);
+  await writeStatus(dir, slug, state);
 
   // Heartbeat: keep file fresh so waybar can detect stale entries
-  // (3s interval, so waybar's 15s stale threshold allows ~5 missed beats)
+  // (3s interval, so waybar's 20s stale threshold allows ~6 missed beats)
   const HEARTBEAT_MS = 3000;
   const heartbeat = setInterval(() => {
     flush(false).catch(() => {});
@@ -102,7 +103,7 @@ export const WaybarStatus: Plugin = async ({ project, serverUrl, $ }) => {
     dispose: async () => {
       clearInterval(heartbeat);
       if (flushAgain) clearTimeout(flushAgain);
-      removeStatusSync(dir, instanceId);
+      removeStatusSync(dir, slug);
       try {
         $`pkill -RTMIN+${SIGNAL_NUM} waybar`;
       } catch {
