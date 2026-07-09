@@ -1,5 +1,5 @@
 import { writeFile, rename, mkdir, unlink } from "node:fs/promises";
-import { existsSync } from "node:fs";
+import { existsSync, unlinkSync } from "node:fs";
 import path from "node:path";
 
 export interface InstanceState {
@@ -37,6 +37,15 @@ export async function removeStatus(
   const dst = path.join(dir, `${instanceId}.json`);
   try {
     await unlink(dst);
+  } catch {
+    // already gone — fine
+  }
+}
+
+export function removeStatusSync(dir: string, instanceId: string): void {
+  const dst = path.join(dir, `${instanceId}.json`);
+  try {
+    unlinkSync(dst);
   } catch {
     // already gone — fine
   }

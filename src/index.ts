@@ -6,7 +6,7 @@ import {
   SIGNAL_NUM,
 } from "./constants.js";
 import type { InstanceState } from "./status.js";
-import { writeStatus, removeStatus } from "./status.js";
+import { writeStatus, removeStatus, removeStatusSync } from "./status.js";
 
 export const WaybarStatus: Plugin = async ({ project, serverUrl, $ }) => {
   const dir = getStatusDir();
@@ -23,13 +23,15 @@ export const WaybarStatus: Plugin = async ({ project, serverUrl, $ }) => {
 
   let flushAgain: ReturnType<typeof setTimeout> | undefined;
 
-  async function flush() {
+  async function flush(signal = true) {
     state.updatedAt = Date.now();
     await writeStatus(dir, instanceId, state);
-    try {
-      await $`pkill -RTMIN+${SIGNAL_NUM} waybar`;
-    } catch {
-      // waybar not running — fine
+    if (signal) {
+      try {
+        await $`pkill -RTMIN+${SIGNAL_NUM} waybar`;
+      } catch {
+        // waybar not running — fine
+      }
     }
   }
 
@@ -41,13 +43,22 @@ export const WaybarStatus: Plugin = async ({ project, serverUrl, $ }) => {
     }, 150);
   }
 
+  // Write initial idle state immediately
+  await writeStatus(dir, instanceId, state);
+
+  // Heartbeat: keep file fresh so waybar can detect stale entries
+  // (3s interval, so waybar's 15s stale threshold allows ~5 missed beats)
+  const HEARTBEAT_MS = 3000;
+  const heartbeat = setInterval(() => {
+    flush(false).catch(() => {});
+  }, HEARTBEAT_MS);
+
   return {
     event: async ({ event }) => {
       switch (event.type) {
-        case "session.created":
-        case "session.updated":
         case "session.status":
-          state.status = "working";
+          state.status =
+            event.properties.status.type === "idle" ? "idle" : "working";
           await scheduleFlush();
           break;
 
@@ -61,14 +72,19 @@ export const WaybarStatus: Plugin = async ({ project, serverUrl, $ }) => {
           await scheduleFlush();
           break;
 
-        case "permission.updated":
-          state.permissionRequested = true;
-          await scheduleFlush();
-          break;
-
         case "permission.replied":
           state.permissionRequested = false;
           await scheduleFlush();
+          break;
+
+        default:
+          // permission.asked is not in SDK types but is published at runtime
+          if (
+            (event as unknown as { type: string }).type === "permission.asked"
+          ) {
+            state.permissionRequested = true;
+            await scheduleFlush();
+          }
           break;
       }
     },
@@ -84,10 +100,11 @@ export const WaybarStatus: Plugin = async ({ project, serverUrl, $ }) => {
     },
 
     dispose: async () => {
+      clearInterval(heartbeat);
       if (flushAgain) clearTimeout(flushAgain);
-      await removeStatus(dir, instanceId);
+      removeStatusSync(dir, instanceId);
       try {
-        await $`pkill -RTMIN+${SIGNAL_NUM} waybar`;
+        $`pkill -RTMIN+${SIGNAL_NUM} waybar`;
       } catch {
         // waybar not running
       }
