@@ -6,7 +6,7 @@ import {
   SIGNAL_NUM,
 } from "./constants.js";
 import type { InstanceState } from "./status.js";
-import { writeStatus, removeStatus, removeStatusSync } from "./status.js";
+import { writeStatus, removeStatusSync } from "./status.js";
 
 export const WaybarStatus: Plugin = async ({ project, serverUrl, $ }) => {
   const dir = getStatusDir();
@@ -38,6 +38,7 @@ export const WaybarStatus: Plugin = async ({ project, serverUrl, $ }) => {
 
   async function scheduleFlush() {
     if (flushAgain) clearTimeout(flushAgain);
+
     flushAgain = setTimeout(() => {
       flush();
       flushAgain = undefined;
@@ -103,6 +104,7 @@ export const WaybarStatus: Plugin = async ({ project, serverUrl, $ }) => {
     dispose: async () => {
       clearInterval(heartbeat);
       if (flushAgain) clearTimeout(flushAgain);
+
       removeStatusSync(dir, slug);
       try {
         $`pkill -RTMIN+${SIGNAL_NUM} waybar`;
